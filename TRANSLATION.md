@@ -32,6 +32,14 @@ BentoPDF uses **i18next** for internationalization (i18n). Currently supported l
 - **Chinese** (`zh`)
 - **Traditional Chinese (Taiwan)** (`zh-TW`)
 - **Korean** (`ko`)
+- **Russian** (`ru`)
+- **Ukrainian** (`uk`)
+- **Slovak** (`sk`)
+- **Arabic** (`ar`)
+- **Dutch** (`nl`)
+- **Danish** (`da`)
+- **Swedish** (`sv`)
+- **Japanese** (`ja`)
 
 The app automatically detects the language from the URL path:
 
@@ -601,8 +609,16 @@ Current translation coverage:
 | Chinese             | `zh`    | ✅ Complete    | Community  |
 | Traditional Chinese | `zh-TW` | ✅ Complete    | Community  |
 | Korean              | `ko`    | ✅ Complete    | Community  |
+| Russian             | `ru`    | ✅ Complete    | Community  |
+| Ukrainian           | `uk`    | ✅ Complete    | Community  |
+| Slovak              | `sk`    | ✅ Complete    | Community  |
+| Arabic              | `ar`    | ✅ Complete    | Community  |
+| Dutch               | `nl`    | ✅ Complete    | Community  |
+| Danish              | `da`    | ✅ Complete    | Community  |
+| Swedish             | `sv`    | ✅ Complete    | Community  |
+| Japanese            | `ja`    | ✅ Complete    | Community  |
 | Your Language       | `??`    | 🚧 In Progress | You?       |
 
 ---
 
-**Last Updated**: January 2026
+**Last Updated**: June 2026

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Primary Meta Tags -->
-    <title>Split PDF Online Free - Split PDF Tool | BentoPDF</title>
     <meta
       name="title"
       content="Split PDF Online Free - Split PDF Tool | BentoPDF"
@@ -25,7 +24,7 @@
     />
 
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://www.bentopdf.com/split-pdf.html" />
+    <link rel="canonical" href="https://www.bentopdf.com/split-pdf" />
 
     <!-- Open Graph / Facebook / LinkedIn -->
     <meta property="og:type" content="website" />
@@ -360,17 +359,41 @@
             </p>
           </div>
 
-          <div id="zip-option-wrapper" class="mt-4 flex items-center">
-            <input
-              id="download-as-zip"
-              type="checkbox"
-              class="w-4 h-4 text-indigo-600 bg-gray-700 border-gray-600 rounded focus:ring-indigo-600 ring-offset-gray-800 focus:ring-2"
-            />
-            <label
-              for="download-as-zip"
-              class="ml-2 text-sm font-medium text-gray-300"
-              >Download as ZIP (for multiple files)</label
-            >
+          <div id="output-mode-wrapper" class="mt-4">
+            <p class="block mb-2 text-sm font-medium text-gray-300">Output</p>
+            <div class="flex items-center mb-2">
+              <input
+                id="output-combine"
+                type="radio"
+                value="combine"
+                name="split-output-mode"
+                checked
+                class="w-4 h-4 text-indigo-600 bg-gray-700 border-gray-600 focus:ring-indigo-600 ring-offset-gray-800 focus:ring-2"
+              />
+              <label
+                for="output-combine"
+                class="ml-2 text-sm font-medium text-gray-300"
+                >Single combined PDF</label
+              >
+            </div>
+            <div class="flex items-center">
+              <input
+                id="output-separate"
+                type="radio"
+                value="separate"
+                name="split-output-mode"
+                class="w-4 h-4 text-indigo-600 bg-gray-700 border-gray-600 focus:ring-indigo-600 ring-offset-gray-800 focus:ring-2"
+              />
+              <label
+                for="output-separate"
+                id="output-separate-label"
+                class="ml-2 text-sm font-medium text-gray-300"
+                >One PDF per range</label
+              >
+            </div>
+            <p class="mt-2 text-xs text-gray-400">
+              Multiple files are downloaded together as a ZIP.
+            </p>
           </div>
 
           <button id="process-btn" class="btn-gradient w-full mt-6">
@@ -590,7 +613,6 @@
     <script type="module" src="/src/js/utils/lucide-init.ts"></script>
     <script type="module" src="/src/js/utils/full-width.ts"></script>
     <script type="module" src="/src/js/utils/simple-mode-footer.ts"></script>
-    <script type="module" src="/src/version.ts"></script>
     <script type="module" src="/src/js/logic/split-pdf-page.ts"></script>
     <script type="module" src="/src/js/mobileMenu.ts"></script>
     <script type="module" src="/src/js/main.ts"></script>
@@ -607,11 +629,6 @@
           "@type": "Offer",
           "price": "0",
           "priceCurrency": "USD"
-        },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "ratingCount": "3584"
         }
       }
     </script>

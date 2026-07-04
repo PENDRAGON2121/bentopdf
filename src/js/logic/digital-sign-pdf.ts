@@ -1,6 +1,7 @@
 import { PdfSigner, type SignOption } from 'zgapdfsigner';
 import forge from 'node-forge';
 import { CertificateData, SignPdfOptions } from '@/types';
+import { isValidTsaRequestUrl } from '../config/timestamp-tsa.js';
 
 export function parsePfxFile(
   pfxBytes: ArrayBuffer,
@@ -153,6 +154,33 @@ async function generateProxySignature(
     .join('');
 }
 
+function resolveProxyBase(): string {
+  if (
+    CORS_PROXY_URL.startsWith('http://') ||
+    CORS_PROXY_URL.startsWith('https://')
+  ) {
+    return CORS_PROXY_URL;
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return new URL(CORS_PROXY_URL, window.location.origin).toString();
+  }
+  return CORS_PROXY_URL;
+}
+
+async function buildCorsProxyUrl(url: string): Promise<string> {
+  let proxyUrl = `${resolveProxyBase()}?url=${encodeURIComponent(url)}`;
+
+  if (!CORS_PROXY_SECRET) {
+    return proxyUrl;
+  }
+
+  const timestamp = Date.now();
+  const signature = await generateProxySignature(url, timestamp);
+  proxyUrl += `&t=${timestamp}&sig=${signature}`;
+
+  return proxyUrl;
+}
+
 /**
  * Custom fetch wrapper that routes external certificate requests through a CORS proxy.
  * The zgapdfsigner library tries to fetch issuer certificates from URLs embedded in the
@@ -182,6 +210,9 @@ function createCorsAwareFetch(): {
             ? input.toString()
             : input.url;
 
+      const isAlreadyProxied =
+        CORS_PROXY_URL.length > 0 && url.startsWith(CORS_PROXY_URL);
+
       const isExternalCertificateUrl =
         (url.includes('.crt') ||
           url.includes('.cer') ||
@@ -192,20 +223,33 @@ function createCorsAwareFetch(): {
           url.includes('caIssuers')) &&
         !url.startsWith(window.location.origin);
 
-      if (isExternalCertificateUrl && CORS_PROXY_URL) {
-        let proxyUrl = `${CORS_PROXY_URL}?url=${encodeURIComponent(url)}`;
+      const isTsaRequest =
+        (init?.headers &&
+          (init.headers instanceof Headers
+            ? init.headers.get('Content-Type') === 'application/timestamp-query'
+            : typeof init.headers === 'object' &&
+              !Array.isArray(init.headers) &&
+              (init.headers as Record<string, string>)['Content-Type'] ===
+                'application/timestamp-query')) ||
+        url.includes('timestamp') ||
+        url.includes('/tsa') ||
+        url.includes('/tsr') ||
+        url.includes('/ts01') ||
+        url.includes('RFC3161');
 
+      const shouldProxy =
+        !isAlreadyProxied &&
+        (isExternalCertificateUrl || isTsaRequest) &&
+        !url.startsWith(window.location.origin);
+
+      if (shouldProxy && CORS_PROXY_URL) {
+        const proxyUrl = await buildCorsProxyUrl(url);
         if (CORS_PROXY_SECRET) {
-          const timestamp = Date.now();
-          const signature = await generateProxySignature(url, timestamp);
-          proxyUrl += `&t=${timestamp}&sig=${signature}`;
           console.log(
-            `[CORS Proxy] Routing signed certificate request through proxy: ${url}`
+            `[CORS Proxy] Routing signed request through proxy: ${url}`
           );
         } else {
-          console.log(
-            `[CORS Proxy] Routing certificate request through proxy: ${url}`
-          );
+          console.log(`[CORS Proxy] Routing request through proxy: ${url}`);
         }
 
         return originalFetch(proxyUrl, init);
@@ -297,6 +341,59 @@ export async function signPdf(
   try {
     const signedPdfBytes = await signer.sign(pdfBytes);
     return new Uint8Array(signedPdfBytes);
+  } finally {
+    restore();
+  }
+}
+
+export async function timestampPdf(
+  pdfBytes: Uint8Array,
+  tsaUrl: string
+): Promise<Uint8Array> {
+  if (!isValidTsaRequestUrl(tsaUrl)) {
+    throw new Error(
+      `Invalid TSA URL. The timestamp authority must be a valid http:// or https:// URL.`
+    );
+  }
+
+  const pageIsHttps =
+    typeof window !== 'undefined' && window.location?.protocol === 'https:';
+  const tsaIsHttp = /^http:\/\//i.test(tsaUrl);
+
+  if (pageIsHttps && tsaIsHttp && !CORS_PROXY_URL) {
+    throw new Error(
+      `This TSA endpoint uses HTTP (${tsaUrl}). The browser blocks insecure ` +
+        `requests from this HTTPS page. Either choose a TSA with an HTTPS ` +
+        `endpoint or configure VITE_CORS_PROXY_URL at build time so the ` +
+        `request can be relayed through your proxy.`
+    );
+  }
+
+  let effectiveUrl = tsaUrl;
+
+  if (CORS_PROXY_URL) {
+    effectiveUrl = await buildCorsProxyUrl(tsaUrl);
+
+    if (CORS_PROXY_SECRET) {
+      console.log(
+        `[Timestamp] Routing signed TSA request through proxy: ${tsaUrl}`
+      );
+    } else {
+      console.log(`[Timestamp] Routing TSA request through proxy: ${tsaUrl}`);
+    }
+  }
+
+  const signOptions: SignOption = {
+    signdate: { url: effectiveUrl },
+  };
+
+  const signer = new PdfSigner(signOptions);
+
+  const { restore } = createCorsAwareFetch();
+
+  try {
+    const timestampedPdfBytes = await signer.sign(pdfBytes);
+    return new Uint8Array(timestampedPdfBytes);
   } finally {
     restore();
   }

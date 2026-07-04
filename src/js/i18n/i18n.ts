@@ -6,6 +6,7 @@ export const supportedLanguages = [
   'en',
   'ar',
   'be',
+  'ru',
   'fr',
   'de',
   'es',
@@ -20,6 +21,9 @@ export const supportedLanguages = [
   'da',
   'sv',
   'ko',
+  'ja',
+  'uk',
+  'sk',
 ] as const;
 export type SupportedLanguage = (typeof supportedLanguages)[number];
 
@@ -27,6 +31,7 @@ export const languageNames: Record<SupportedLanguage, string> = {
   en: 'English',
   ar: 'العربية',
   be: 'Беларуская',
+  ru: 'Русский',
   fr: 'Français',
   de: 'Deutsch',
   es: 'Español',
@@ -41,6 +46,9 @@ export const languageNames: Record<SupportedLanguage, string> = {
   da: 'Dansk',
   sv: 'Svenska',
   ko: '한국어',
+  ja: '日本語',
+  uk: 'Українська',
+  sk: 'Slovenčina',
 };
 
 export const getLanguageFromUrl = (): SupportedLanguage => {
@@ -56,7 +64,7 @@ export const getLanguageFromUrl = (): SupportedLanguage => {
   }
 
   const langMatch = path.match(
-    /^\/(en|ar|fr|es|de|zh|zh-TW|vi|tr|id|it|pt|nl|be|da|ko)(?:\/|$)/
+    /^\/(en|ar|fr|es|de|zh|zh-TW|vi|tr|id|it|pt|nl|be|da|ko|sv|ru|ja|uk|sk)(?:\/|$)/
   );
   if (
     langMatch &&
@@ -73,7 +81,21 @@ export const getLanguageFromUrl = (): SupportedLanguage => {
     return storedLang as SupportedLanguage;
   }
 
-  const envLang = import.meta.env.VITE_DEFAULT_LANGUAGE;
+  // Check browser language preferences
+  if (typeof navigator !== 'undefined' && navigator.languages) {
+    for (const lang of navigator.languages) {
+      if (supportedLanguages.includes(lang as SupportedLanguage)) {
+        return lang as SupportedLanguage;
+      }
+
+      const primaryLang = lang.split('-')[0];
+      if (supportedLanguages.includes(primaryLang as SupportedLanguage)) {
+        return primaryLang as SupportedLanguage;
+      }
+    }
+  }
+
+  const envLang = import.meta.env?.VITE_DEFAULT_LANGUAGE;
   if (envLang && supportedLanguages.includes(envLang as SupportedLanguage)) {
     return envLang as SupportedLanguage;
   }
@@ -132,7 +154,7 @@ export const changeLanguage = (lang: SupportedLanguage): void => {
 
   let pagePathWithoutLang = relativePath;
   const langPrefixMatch = relativePath.match(
-    /^\/(en|ar|fr|es|de|zh|zh-TW|vi|tr|id|it|pt|nl|be|da|ko)(\/.*)?$/
+    /^\/(en|ar|fr|es|de|zh|zh-TW|vi|tr|id|it|pt|nl|be|da|ko|sv|ru|ja|uk|sk)(\/.*)?$/
   );
   if (langPrefixMatch) {
     pagePathWithoutLang = langPrefixMatch[2] || '/';
@@ -215,7 +237,9 @@ export const rewriteLinks = (): void => {
       href.startsWith('mailto:') ||
       href.startsWith('tel:') ||
       href.startsWith('#') ||
-      href.startsWith('javascript:')
+      href.startsWith('javascript:') ||
+      href.startsWith('data:') ||
+      href.startsWith('vbscript:')
     ) {
       return;
     }
@@ -225,7 +249,7 @@ export const rewriteLinks = (): void => {
     }
 
     const langPrefixRegex = new RegExp(
-      `^(${basePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})?/?(en|ar|fr|es|de|zh|zh-TW|vi|tr|id|it|pt|nl|be|da|ko)(/|$)`
+      `^(${basePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})?/?(en|ar|fr|es|de|zh|zh-TW|vi|tr|id|it|pt|nl|be|da|ko|sv|ru|ja|uk|sk)(/|$)`
     );
     if (langPrefixRegex.test(href)) {
       return;
